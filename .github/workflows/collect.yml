@@ -1,7 +1,7 @@
 name: WEGO 데이터 수집 (하루 여러 번)
 
 # Vercel Hobby 플랜은 자체 Cron Jobs가 하루 1회로 제한되어 있어서,
-# 네이버 블로그/뉴스 기반 수집(대형행사·할인·블로그픽)만 GitHub Actions로 더 자주 트리거한다.
+# 네이버 블로그/뉴스 기반 수집(대형행사·할인·블로그픽·도민맛집)만 GitHub Actions로 더 자주 트리거한다.
 # TourAPI/VisitJeju/인스타 수집은 그대로 Vercel 자체 cron(하루 1회)이 담당한다.
 on:
   schedule:
@@ -12,9 +12,18 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     steps:
+      # if: always() — 한 스텝이 실패해도(예: Gemini 일시 오류) 나머지 스텝은 계속 실행되게.
+      # 각 라우트 자체도 이제 Gemini 오류를 잡아서 200으로 반환하지만, Vercel 자체 장애 등
+      # 예상 못한 실패까지 대비한 2중 방어.
       - name: bigevents
+        if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/bigevents?secret=${{ secrets.ADMIN_SECRET }}"
       - name: deals
+        if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/deals?secret=${{ secrets.ADMIN_SECRET }}"
       - name: blogspots
+        if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/blogspots?secret=${{ secrets.ADMIN_SECRET }}"
+      - name: localfood
+        if: always()
+        run: curl -sf "https://jeju-wego.vercel.app/api/cron/localfood?secret=${{ secrets.ADMIN_SECRET }}"
