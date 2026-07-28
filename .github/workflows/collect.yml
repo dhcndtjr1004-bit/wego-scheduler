@@ -27,3 +27,6 @@ jobs:
       - name: localfood
         if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/localfood?secret=${{ secrets.ADMIN_SECRET }}"
+      - name: prune-dead-links
+        if: always()
+        run: curl -sf "https://jeju-wego.vercel.app/api/cron/prune-dead-links?secret=${{ secrets.ADMIN_SECRET }}"
