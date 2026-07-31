@@ -32,3 +32,8 @@ jobs:
       - name: prune-dead-links
         if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/prune-dead-links?secret=${{ secrets.ADMIN_SECRET }}"
+      # 마지막에 둔다: 위 수집들이 끝난 직후의 갱신 시각을 보고 판정해야 한다.
+      # 인스타 수집기(브라우저 Tampermonkey)가 조용히 죽는 걸 잡는 게 주 목적이다.
+      - name: healthcheck
+        if: always()
+        run: curl -sf "https://jeju-wego.vercel.app/api/cron/healthcheck?secret=${{ secrets.ADMIN_SECRET }}"

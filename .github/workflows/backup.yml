@@ -1,0 +1,43 @@
+name: WEGO KV 백업 (매일)
+
+# 이 서비스의 자산은 코드가 아니라 누적 데이터다(맛집 1,245곳 × 30일 롤링 언급수 등).
+# Upstash 인스턴스가 날아가거나 실수로 덮어쓰면 복구 수단이 없었다.
+# 백업을 KV 안에 두면 KV와 함께 죽으므로, 이 저장소(외부)에 파일로 남긴다.
+on:
+  schedule:
+    - cron: '40 18 * * *' # UTC 18:40 = KST 03:40 (수집이 한산한 시각)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 덤프 받기
+        # -f: HTTP 오류면 여기서 실패시킨다. 실패한 응답으로 기존 백업을 덮으면 안 된다.
+        run: |
+          mkdir -p backups
+          curl -sf --max-time 120 \
+            "https://jeju-wego.vercel.app/api/backup?secret=${{ secrets.ADMIN_SECRET }}" \
+            -o backups/wego-kv.json
+          node -e "
+            const j = require('./backups/wego-kv.json');
+            if (!j.keyCount) { console.error('키 0개 - 백업 중단'); process.exit(1); }
+            console.log('키', j.keyCount, '개 /', Math.round(j.bytes/1024), 'KB');
+          "
+
+      - name: 변경분만 커밋
+        run: |
+          git config user.name  "wego-backup"
+          git config user.email "actions@users.noreply.github.com"
+          git add backups/wego-kv.json
+          if git diff --cached --quiet; then
+            echo "변경 없음 - 커밋 생략"
+          else
+            git commit -m "backup: KV snapshot $(date -u +%Y-%m-%d)"
+            git push
+          fi
