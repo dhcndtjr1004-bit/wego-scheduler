@@ -29,9 +29,11 @@ jobs:
       - name: localfood
         if: always()
         run: curl -sf "https://jeju-wego.vercel.app/api/cron/localfood?secret=${{ secrets.ADMIN_SECRET }}"
-      - name: prune-dead-links
-        if: always()
-        run: curl -sf "https://jeju-wego.vercel.app/api/cron/prune-dead-links?secret=${{ secrets.ADMIN_SECRET }}"
+      # prune-dead-links는 2026-08-04에 prune.yml(하루 1회)로 옮겼다.
+      # Vercel 함수 300초 한도에 걸려 exit 22로 죽으면서 이 워크플로 전체를
+      # 실패로 만들고 있었다(8/2~8/3에만 4회). 실측 4분 57초 — 한도까지 3초였다.
+      # 죽은 링크 정리를 2시간마다 할 이유가 없어 분리했다.
+
       # 마지막에 둔다: 위 수집들이 끝난 직후의 갱신 시각을 보고 판정해야 한다.
       # 인스타 수집기(브라우저 Tampermonkey)가 조용히 죽는 걸 잡는 게 주 목적이다.
       - name: healthcheck
