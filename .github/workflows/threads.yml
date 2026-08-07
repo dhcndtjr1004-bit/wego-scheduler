@@ -5,15 +5,11 @@ name: WEGO 스레드 발행 (매일)
 # Vercel 자체 cron에 두지 않은 이유: Hobby 플랜은 cron이 하루 1회로 제한되고
 # vercel.json에 이미 8건이 올라가 있어 실제로 도는지 보장되지 않는다. 더 나쁜 건
 # 둘 다 걸면 하루에 두 번 올라간다는 것이다 — 발행은 되돌릴 수 없으니 트리거를 하나로 둔다.
-# 🔴 자동 발행 중단 (2026-08-07).
-#    개인 계정(@dadada.lovely)에 WEGO 홍보글이 매일 올라가는 건 안 될 일이라는 판단.
-#    스케줄만 껐고 코드는 남겨둔다 — 전용 계정을 만들면 아래 schedule 블록만 되살리면 된다.
-#
-# on:
-#   schedule:
-#     - cron: '0 0 * * *' # UTC 00:00 = KST 09:00
 on:
-  workflow_dispatch: {} # 수동 실행 버튼만. 자동으로는 절대 돌지 않는다.
+  schedule:
+    - cron: '0 0 * * *' # UTC 00:00 = KST 09:00
+      # bigevents 수집이 매시 :17(2시간마다) 도니까 직전 23:17 UTC 갱신분을 보고 올린다.
+  workflow_dispatch: {} # 수동 실행 버튼용
 
 jobs:
   post:
