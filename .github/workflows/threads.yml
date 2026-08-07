@@ -1,0 +1,38 @@
+name: WEGO 스레드 발행 (매일)
+
+# WEGO가 모아둔 오늘 행사/도민맛집 하나를 스레드 계정에 올린다.
+#
+# Vercel 자체 cron에 두지 않은 이유: Hobby 플랜은 cron이 하루 1회로 제한되고
+# vercel.json에 이미 8건이 올라가 있어 실제로 도는지 보장되지 않는다. 더 나쁜 건
+# 둘 다 걸면 하루에 두 번 올라간다는 것이다 — 발행은 되돌릴 수 없으니 트리거를 하나로 둔다.
+on:
+  schedule:
+    - cron: '0 0 * * *' # UTC 00:00 = KST 09:00
+      # bigevents 수집이 매시 :17(2시간마다) 도니까 직전 23:17 UTC 갱신분을 보고 올린다.
+  workflow_dispatch: {} # 수동 실행 버튼용
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: threads-post
+        # 라우트가 컨테이너 생성 후 메타 권장대로 30초를 기다렸다가 발행한다.
+        # --max-time 은 그 대기(30초) + API 왕복을 덮을 만큼 줘야 한다.
+        # 재시도는 하지 않는다: 발행이 실제로 성공한 뒤 응답만 유실된 경우
+        # 재시도하면 같은 날 두 건이 올라간다. 실패하면 다음 날 자연히 다시 시도된다.
+        run: |
+          set -u
+          URL="https://jeju-wego.vercel.app/api/cron/threads-post?secret=${{ secrets.ADMIN_SECRET }}"
+          CODE=0
+          BODY=$(curl -s --max-time 120 -w '\n%{http_code}' "$URL") || CODE=$?
+          echo "$BODY"
+          STATUS=$(echo "$BODY" | tail -n1)
+          if [ "$CODE" -ne 0 ]; then
+            echo "curl 자체가 실패했다 (exit $CODE)"
+            exit 1
+          fi
+          if [ "$STATUS" != "200" ]; then
+            echo "발행 실패 (HTTP $STATUS). 토큰 만료가 가장 흔한 원인이다."
+            echo "확인: node scripts/threads-token.mjs check"
+            exit 1
+          fi
